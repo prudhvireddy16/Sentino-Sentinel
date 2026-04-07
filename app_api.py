@@ -1,16 +1,23 @@
+import logging
+
+# Configure professional logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[logging.Stream_Handler()]
+)
+logger = logging.getLogger(__name__)
 from fastapi import FastAPI, HTTPException
 import joblib
 import pandas as pd
 from pydantic import BaseModel
 
-# 1. Load the AI Model and the Feature List we saved during training
-# This ensures the API uses the exact same logic as our experiments
+# 1. Load the "Brain" and Features
 model = joblib.load('sentinel_model.pkl')
 features = joblib.load('model_features.pkl')
 
 app = FastAPI(title="Sentino-Sentinel Enterprise Fraud API")
 
-# 2. Define the Request Structure (Senior-level data validation)
 class Transaction(BaseModel):
     user_id: int
     merchant_id: int
@@ -27,13 +34,13 @@ def health_check():
 @app.post("/v1/predict")
 def predict_transaction(data: Transaction):
     try:
-        # Convert incoming JSON data to a Dataframe
-        input_df = pd.DataFrame([data.dict()])
+        # Convert JSON to Dataframe using modern Pydantic model_dump
+        input_df = pd.DataFrame([data.model_dump()])
         
-        # Order columns exactly as the model expects
+        # Ensure columns are in the right order
         input_df = input_df[features]
         
-        # Make the Prediction
+        # Make Prediction
         prediction = model.predict(input_df)[0]
         probability = model.predict_proba(input_df)[0][1]
         
@@ -44,7 +51,4 @@ def predict_transaction(data: Transaction):
             "request_timestamp": pd.Timestamp.now().isoformat()
         }
     except Exception as e:
-        # Standard error handling for enterprise APIs
-        raise HTTPException(status_code=500, detail=f"Inference Error: {str(e)}")
-
-# Command to run: uvicorn app_api:app --reload
+        raise HTTPException(status_code=500, detail=str(e))
