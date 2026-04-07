@@ -4,6 +4,3 @@ __pycache__/
 mlruns/
 .ipynb_checkpoints/
 .env
-git add .gitignore
-git commit -m "security: add .env to gitignore to protect credentials"
-git push origin main
