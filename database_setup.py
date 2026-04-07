@@ -1,16 +1,24 @@
-
+import os
+from dotenv import load_dotenv
 from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, ForeignKey
-from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.orm import declarative_base
 import datetime
 
-# 1. Connection String
-# Format: postgresql://username:password@localhost:5432/database_name
-DATABASE_URL = "postgresql://postgres:admin123@localhost:5432/sentino_sentinel_db"
+# 1. Load environment variables
+load_dotenv()
+
+DB_PASSWORD = os.getenv("DB_PASSWORD")
+DB_HOST = os.getenv("DB_HOST", "localhost")
+DB_USER = os.getenv("DB_USER", "postgres")
+DB_NAME = os.getenv("DB_NAME", "sentino_sentinel_db")
+
+# 2. Build the connection string dynamically
+DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:5432/{DB_NAME}"
 
 engine = create_engine(DATABASE_URL)
 Base = declarative_base()
 
-# 2. DIMENSION TABLE: Users (Senior Architecture: Separating user data)
+# (The rest of your table classes remain the same as before...)
 class User(Base):
     __tablename__ = 'dim_users'
     user_id = Column(Integer, primary_key=True)
@@ -18,14 +26,12 @@ class User(Base):
     account_age_days = Column(Integer)
     risk_score = Column(Float)
 
-# 3. DIMENSION TABLE: Merchants
 class Merchant(Base):
     __tablename__ = 'dim_merchants'
     merchant_id = Column(Integer, primary_key=True)
     merchant_name = Column(String)
     category = Column(String)
 
-# 4. FACT TABLE: Transactions (The core table for ML)
 class Transaction(Base):
     __tablename__ = 'fact_transactions'
     id = Column(Integer, primary_key=True)
@@ -33,9 +39,9 @@ class Transaction(Base):
     merchant_id = Column(Integer, ForeignKey('dim_merchants.merchant_id'))
     amount = Column(Float)
     timestamp = Column(DateTime, default=datetime.datetime.utcnow)
-    is_fraud = Column(Integer) # 0 = Legit, 1 = Fraud
+    is_fraud = Column(Integer) 
 
-# 5. Execute creation
-print("🚀 Creating Normalized Schema in PostgreSQL...")
-Base.metadata.create_all(engine)
-print("✅ Database tables created successfully.")
+if __name__ == "__main__":
+    print(f"🚀 Connecting to {DB_NAME} as {DB_USER}...")
+    Base.metadata.create_all(engine)
+    print("✅ Schema updated securely using environment variables.")
