@@ -1,18 +1,17 @@
+import os
 import logging
-
-# Configure professional logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[logging.Stream_Handler()]
-)
-logger = logging.getLogger(__name__)
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 import joblib
 import pandas as pd
 from pydantic import BaseModel
 
-# 1. Load the "Brain" and Features
+# 1. Setup Environment and Logging
+load_dotenv()
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+logger = logging.getLogger(__name__)
+
+# 2. Load Model
 model = joblib.load('sentinel_model.pkl')
 features = joblib.load('model_features.pkl')
 
@@ -25,6 +24,7 @@ class Transaction(BaseModel):
 
 @app.get("/")
 def health_check():
+    logger.info("Health check endpoint accessed")
     return {
         "status": "Sentinel Systems Active", 
         "version": "XGBoost-Sentinel-v1",
@@ -34,21 +34,23 @@ def health_check():
 @app.post("/v1/predict")
 def predict_transaction(data: Transaction):
     try:
-        # Convert JSON to Dataframe using modern Pydantic model_dump
-        input_df = pd.DataFrame([data.model_dump()])
+        logger.info(f"Predicting transaction for User: {data.user_id}, Amount: {data.amount}")
         
-        # Ensure columns are in the right order
+        input_df = pd.DataFrame([data.model_dump()])
         input_df = input_df[features]
         
-        # Make Prediction
         prediction = model.predict(input_df)[0]
         probability = model.predict_proba(input_df)[0][1]
+        
+        result = "BLOCK" if prediction == 1 else "ALLOW"
+        logger.warning(f"Decision: {result} | Fraud Prob: {probability:.4f}")
         
         return {
             "is_fraud": int(prediction),
             "fraud_probability": round(float(probability), 4),
-            "system_action": "BLOCK_TRANSACTION" if prediction == 1 else "APPROVE_TRANSACTION",
+            "system_action": f"{result}_TRANSACTION",
             "request_timestamp": pd.Timestamp.now().isoformat()
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Prediction failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal Sentinel Error")
