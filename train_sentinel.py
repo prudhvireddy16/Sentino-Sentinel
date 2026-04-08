@@ -13,7 +13,7 @@ DATABASE_URL = "postgresql://postgres:admin123@localhost:5432/sentino_sentinel_d
 engine = create_engine(DATABASE_URL)
 
 def train_sentinel():
-    print("🧠 Starting Advanced ML Training Pipeline...")
+    print(" Starting Advanced ML Training Pipeline...")
 
     # 2. Extract Data from SQL
     query = "SELECT amount, user_id, merchant_id, is_fraud FROM fact_transactions"
@@ -24,7 +24,7 @@ def train_sentinel():
 
     # 3. Handle Class Imbalance (The "Senior" Way)
     # Fraud is rare. SMOTE creates synthetic examples so the AI learns better.
-    print("⚖️ Balancing dataset with SMOTE...")
+    print(" Balancing dataset with SMOTE...")
     smote = SMOTE(random_state=42)
     X_resampled, y_resampled = smote.fit_resample(X, y)
 
@@ -35,7 +35,7 @@ def train_sentinel():
     mlflow.set_experiment("Sentino_Sentinel_Fraud_Detection")
 
     with mlflow.start_run():
-        print("🚀 Training XGBoost Classifier...")
+        print(" Training XGBoost Classifier...")
         
         # Hyperparameters (Adjusting the "dials" of the AI)
         params = {
@@ -60,15 +60,15 @@ def train_sentinel():
         mlflow.xgboost.log_model(model, "model")
 
         print("-" * 30)
-        print(f"📊 Training Complete!")
-        print(f"✅ Accuracy: {report['accuracy']:.4f}")
-        print(f"🚨 Fraud Recall: {report['1']['recall']:.4f}") # How many frauds did we find?
+        print(f" Training Complete!")
+        print(f" Accuracy: {report['accuracy']:.4f}")
+        print(f" Fraud Recall: {report['1']['recall']:.4f}") # How many frauds did we find?
         print("-" * 30)
 
         # 6. Save locally for production
         joblib.dump(model, 'sentinel_model.pkl')
         joblib.dump(X.columns.tolist(), 'model_features.pkl')
-        print("💾 Model saved as sentinel_model.pkl")
+        print(" Model saved as sentinel_model.pkl")
 
 if __name__ == "__main__":
     train_sentinel()
