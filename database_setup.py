@@ -42,6 +42,6 @@ class Transaction(Base):
     is_fraud = Column(Integer) 
 
 if __name__ == "__main__":
-    print(f"🚀 Connecting to {DB_NAME} as {DB_USER}...")
+    print(f" Connecting to {DB_NAME} as {DB_USER}...")
     Base.metadata.create_all(engine)
-    print("✅ Schema updated securely using environment variables.")
+    print(" Schema updated securely using environment variables.")
